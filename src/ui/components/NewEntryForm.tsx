@@ -52,7 +52,7 @@ export default function NewEntryForm({ onClose, defaultFolder }: NewEntryFormPro
   };
 
   const handleUseGenerated = (password: string) => {
-    const pwIndex = fields.findIndex((f) => f.key === '密碼');
+    const pwIndex = fields.findIndex((f) => f.key === '密碼' || f.key === '使用者密碼');
     if (pwIndex >= 0) {
       handleFieldChange(pwIndex, password);
     }
@@ -61,6 +61,8 @@ export default function NewEntryForm({ onClose, defaultFolder }: NewEntryFormPro
 
   const typeOptions: { value: EntryType; label: string; icon: string }[] = [
     { value: 'login', label: '登入', icon: '🔑' },
+    { value: 'bank', label: '網路銀行', icon: '🏦' },
+    { value: 'debit-card', label: '金融卡', icon: '🏧' },
     { value: 'card', label: '信用卡', icon: '💳' },
     { value: 'identity', label: '身份', icon: '👤' },
     { value: 'note', label: '筆記', icon: '📝' },
@@ -138,7 +140,7 @@ export default function NewEntryForm({ onClose, defaultFolder }: NewEntryFormPro
                   ✕
                 </button>
               </div>
-              {field.key === '密碼' && field.value && (
+              {(field.key === '密碼' || field.key === '使用者密碼') && field.value && (
                 <StrengthMeter password={field.value} />
               )}
             </div>
@@ -152,7 +154,7 @@ export default function NewEntryForm({ onClose, defaultFolder }: NewEntryFormPro
             >
               + 新增欄位
             </button>
-            {type === 'login' && (
+            {(type === 'login' || type === 'bank') && (
               <button
                 type="button"
                 onClick={() => setShowGenerator(!showGenerator)}

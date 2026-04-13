@@ -9,7 +9,7 @@ export interface HistoryRecord {
   fields: VaultField[];
 }
 
-export type EntryType = 'login' | 'card' | 'identity' | 'note';
+export type EntryType = 'login' | 'card' | 'identity' | 'note' | 'bank' | 'debit-card';
 
 export interface VaultEntry {
   id: string;
@@ -92,6 +92,7 @@ export const DEFAULT_FIELDS: Record<EntryType, VaultField[]> = {
     { key: '持卡人', value: '', sensitive: false },
     { key: '到期日', value: '', sensitive: false },
     { key: 'CVV', value: '', sensitive: true },
+    { key: '預借現金密碼', value: '', sensitive: true },
     { key: '備註', value: '', sensitive: false },
   ],
   identity: [
@@ -99,6 +100,21 @@ export const DEFAULT_FIELDS: Record<EntryType, VaultField[]> = {
     { key: '電子郵件', value: '', sensitive: false },
     { key: '電話', value: '', sensitive: false },
     { key: '地址', value: '', sensitive: false },
+    { key: '備註', value: '', sensitive: false },
+  ],
+  bank: [
+    { key: '銀行名稱', value: '', sensitive: false },
+    { key: '身分證字號', value: '', sensitive: true },
+    { key: '使用者代號', value: '', sensitive: true },
+    { key: '使用者密碼', value: '', sensitive: true },
+    { key: '備註', value: '', sensitive: false },
+  ],
+  'debit-card': [
+    { key: '銀行名稱', value: '', sensitive: false },
+    { key: '卡號', value: '', sensitive: true },
+    { key: '提款密碼', value: '', sensitive: true },
+    { key: '無卡提款密碼', value: '', sensitive: true },
+    { key: '磁條密碼', value: '', sensitive: true },
     { key: '備註', value: '', sensitive: false },
   ],
   note: [

@@ -12,6 +12,8 @@ const TYPE_ICONS: Record<string, string> = {
   card: '💳',
   identity: '👤',
   note: '📝',
+  bank: '🏦',
+  'debit-card': '🏧',
 };
 
 export default function EntryList({ entries, selectedId, onSelect, isTrash }: EntryListProps) {

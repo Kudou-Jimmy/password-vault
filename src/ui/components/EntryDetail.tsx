@@ -53,7 +53,7 @@ export default function EntryDetail({ entry, onClose, isTrash }: EntryDetailProp
   };
 
   const handleUseGenerated = (password: string) => {
-    const pwIndex = fields.findIndex((f) => f.key === '密碼');
+    const pwIndex = fields.findIndex((f) => f.key === '密碼' || f.key === '使用者密碼');
     if (pwIndex >= 0) {
       handleFieldChange(pwIndex, password);
     }
@@ -197,7 +197,7 @@ export default function EntryDetail({ entry, onClose, isTrash }: EntryDetailProp
                       </button>
                     )}
                   </div>
-                  {field.key === '密碼' && field.value && (
+                  {(field.key === '密碼' || field.key === '使用者密碼') && field.value && (
                     <StrengthMeter password={field.value} />
                   )}
                 </>
@@ -213,7 +213,7 @@ export default function EntryDetail({ entry, onClose, isTrash }: EntryDetailProp
               >
                 + 新增欄位
               </button>
-              {entry.type === 'login' && (
+              {(entry.type === 'login' || entry.type === 'bank') && (
                 <button
                   onClick={() => setShowGenerator(!showGenerator)}
                   className="text-sm text-primary hover:text-primary-hover"

@@ -11,9 +11,9 @@ export default function HealthReport({ onClose }: { onClose: () => void }) {
   const entries = getActiveEntries(data);
 
   const passwords = entries
-    .filter((e) => e.type === 'login')
+    .filter((e) => e.type === 'login' || e.type === 'bank')
     .map((e) => {
-      const pw = e.fields.find((f) => f.key === '密碼')?.value || '';
+      const pw = e.fields.find((f) => f.key === '密碼' || f.key === '使用者密碼')?.value || '';
       return { entry: e, password: pw, score: pw ? zxcvbn(pw).score as PasswordStrength : 0 };
     })
     .filter((p) => p.password);
