@@ -1,0 +1,44 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --color-primary: #6366f1;
+  --color-primary-hover: #4f46e5;
+  --color-danger: #ef4444;
+  --color-success: #22c55e;
+  --color-warning: #f59e0b;
+  --color-vault-bg: #ffffff;
+  --color-vault-bg-secondary: #f8fafc;
+  --color-vault-bg-tertiary: #f1f5f9;
+  --color-vault-text: #0f172a;
+  --color-vault-text-secondary: #64748b;
+  --color-vault-text-tertiary: #94a3b8;
+  --color-vault-border: #e2e8f0;
+  --color-vault-sidebar: #f8fafc;
+  --color-vault-card: #ffffff;
+  --color-vault-input: #ffffff;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+.dark {
+  --color-vault-bg: #0f172a;
+  --color-vault-bg-secondary: #1e293b;
+  --color-vault-bg-tertiary: #334155;
+  --color-vault-text: #f1f5f9;
+  --color-vault-text-secondary: #94a3b8;
+  --color-vault-text-tertiary: #64748b;
+  --color-vault-border: #334155;
+  --color-vault-sidebar: #1e293b;
+  --color-vault-card: #1e293b;
+  --color-vault-input: #1e293b;
+}
