@@ -1,73 +1,92 @@
-# React + TypeScript + Vite
+# Password Vault - 本地密碼管理程式
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+一個純前端、零後端的密碼管理工具。所有資料使用 AES-256-GCM 加密後儲存在瀏覽器本地，伺服器不接觸任何密碼資料。
 
-Currently, two official plugins are available:
+## 功能
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+### 核心
+- **AES-256-GCM + PBKDF2 加密** — 主密碼衍生加密金鑰，60 萬次迭代
+- **多種條目類型** — 登入、信用卡、身份、筆記，支援自訂欄位
+- **資料夾 & 標籤** — 靈活分類管理
 
-## React Compiler
+### 安全
+- **密碼強度檢查** — 基於 [zxcvbn](https://github.com/dropbox/zxcvbn) 演算法
+- **金庫健康報告** — 偵測弱密碼、重複密碼、過期密碼
+- **自動鎖定** — 閒置 5 分鐘自動鎖定
+- **剪貼簿自動清除** — 複製密碼後 30 秒自動清除
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+### 便利
+- **密碼產生器** — 隨機密碼 & 助記詞組，可自訂長度與字元類型
+- **模糊搜尋** — 即時搜尋標題、欄位、標籤
+- **密碼歷史** — 自動記錄每次修改
+- **回收桶** — 誤刪可恢復
+- **深色 / 淺色模式**
+- **RWD 響應式設計** — 支援手機使用
 
-## Expanding the ESLint configuration
+### 匯出入
+- **加密匯出** — 備份或跨裝置轉移
+- **明碼匯出** — JSON / CSV 格式，匯出前需確認主密碼
+- **匯入** — 匯入加密金庫檔案
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+## 技術棧
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+| 項目 | 技術 |
+|------|------|
+| 框架 | React + TypeScript |
+| 建置 | Vite |
+| 樣式 | Tailwind CSS |
+| 加密 | Web Crypto API (AES-256-GCM + PBKDF2) |
+| 儲存 | localStorage |
+| 密碼評估 | zxcvbn |
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+## 快速開始
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+# 安裝依賴
+npm install
+
+# 啟動開發伺服器
+npm run dev
+
+# 建置生產版本
+npm run build
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+## 專案結構
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
 ```
+src/
+├── core/               # 核心模組（加密、事件系統、金庫邏輯）
+│   ├── crypto.ts       # AES-256-GCM 加解密
+│   ├── events.ts       # 事件總線（擴充用）
+│   └── vault.ts        # 金庫 CRUD 操作
+├── types/              # TypeScript 型別定義
+├── contexts/           # React Context（金庫狀態、主題）
+├── features/           # 功能模組
+│   └── generator/      # 密碼產生器
+└── ui/
+    ├── components/     # UI 元件
+    └── layouts/        # 頁面佈局
+```
+
+## 安全設計
+
+- **零知識架構** — 伺服器僅提供靜態檔案，不處理任何密碼資料
+- **加密金鑰** — 由主密碼透過 PBKDF2（600,000 次迭代）衍生
+- **加密方式** — AES-256-GCM 提供加密與完整性驗證
+- **本地儲存** — 所有資料加密後存於瀏覽器 localStorage
+- **動態欄位** — 條目使用動態欄位設計，不寫死 schema
+- **金庫版本化** — 檔案格式包含版本號，未來可向後相容地升級
+
+## 部署
+
+本專案為純靜態檔案，可部署至任何靜態託管服務：
+
+- 自架伺服器 + Cloudflare Tunnel
+- Cloudflare Pages
+- Vercel / Netlify
+- 或任何支援靜態網站的服務
+
+## License
+
+MIT
