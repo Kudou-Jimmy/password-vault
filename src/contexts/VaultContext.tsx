@@ -33,7 +33,6 @@ interface VaultContextType {
 
   exportEncrypted: () => string | null;
   importEncrypted: (data: string) => void;
-  exportPlaintext: (format: 'json' | 'csv') => string | null;
 
   autoLockMinutes: number;
   setAutoLockMinutes: (minutes: number) => void;
@@ -167,11 +166,6 @@ export function VaultProvider({ children }: { children: ReactNode }) {
     passwordRef.current = '';
   }, []);
 
-  const exportPlaintextFn = useCallback((format: 'json' | 'csv') => {
-    if (!data) return null;
-    return vault.exportPlaintext(data, format);
-  }, [data]);
-
   return (
     <VaultContext.Provider
       value={{
@@ -192,7 +186,6 @@ export function VaultProvider({ children }: { children: ReactNode }) {
         addTag: addTagFn,
         exportEncrypted,
         importEncrypted: importEncryptedFn,
-        exportPlaintext: exportPlaintextFn,
         autoLockMinutes,
         setAutoLockMinutes,
       }}

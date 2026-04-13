@@ -128,7 +128,7 @@ export default function NewEntryForm({ onClose, defaultFolder }: NewEntryFormPro
                     value={field.value}
                     onChange={(e) => handleFieldChange(i, e.target.value)}
                     type={field.sensitive ? 'password' : 'text'}
-                    placeholder="值"
+                    placeholder={`請輸入${field.key}`}
                     className="w-full px-3 py-2 text-sm rounded-lg border border-vault-border bg-vault-input text-vault-text focus:outline-none focus:ring-1 focus:ring-primary"
                   />
                 </div>

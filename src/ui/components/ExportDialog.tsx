@@ -1,41 +1,85 @@
 import { useState } from 'react';
 import { useVault } from '@/contexts/VaultContext';
+import {
+  exportMarkdown,
+  exportGroupedJSON,
+  exportGroupedCSV,
+  exportExcel,
+  exportWord,
+} from '@/features/export';
 
 interface ExportDialogProps {
   onClose: () => void;
 }
 
-export default function ExportDialog({ onClose }: ExportDialogProps) {
-  const { exportEncrypted, exportPlaintext } = useVault();
-  const [confirmPlaintext, setConfirmPlaintext] = useState(false);
+function downloadText(content: string, filename: string, type: string) {
+  const blob = new Blob([content], { type });
+  downloadBlob(blob, filename);
+}
 
-  const download = (content: string, filename: string, type: string) => {
-    const blob = new Blob([content], { type });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = filename;
-    a.click();
-    URL.revokeObjectURL(url);
-  };
+function downloadBlob(blob: Blob, filename: string) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+export default function ExportDialog({ onClose }: ExportDialogProps) {
+  const { exportEncrypted, data } = useVault();
+  const [confirmPlaintext, setConfirmPlaintext] = useState(false);
+  const [exporting, setExporting] = useState(false);
+
+  const ts = Date.now();
 
   const handleEncryptedExport = () => {
-    const data = exportEncrypted();
-    if (data) {
-      download(data, `vault-${Date.now()}.json`, 'application/json');
+    const raw = exportEncrypted();
+    if (raw) {
+      downloadText(raw, `vault-${ts}.json`, 'application/json');
       onClose();
     }
   };
 
-  const handlePlaintextExport = (format: 'json' | 'csv') => {
-    const data = exportPlaintext(format);
-    if (data) {
-      const ext = format === 'json' ? 'json' : 'csv';
-      const type = format === 'json' ? 'application/json' : 'text/csv';
-      download(data, `vault-plaintext-${Date.now()}.${ext}`, type);
+  const handleExport = async (format: 'md' | 'json' | 'csv' | 'xlsx' | 'docx') => {
+    if (!data) return;
+    setExporting(true);
+
+    try {
+      switch (format) {
+        case 'md':
+          downloadText(exportMarkdown(data), `vault-${ts}.md`, 'text/markdown');
+          break;
+        case 'json':
+          downloadText(exportGroupedJSON(data), `vault-${ts}.json`, 'application/json');
+          break;
+        case 'csv':
+          downloadText(exportGroupedCSV(data), `vault-${ts}.csv`, 'text/csv');
+          break;
+        case 'xlsx': {
+          const blob = await exportExcel(data);
+          downloadBlob(blob, `vault-${ts}.xlsx`);
+          break;
+        }
+        case 'docx': {
+          const blob = await exportWord(data);
+          downloadBlob(blob, `vault-${ts}.docx`);
+          break;
+        }
+      }
       onClose();
+    } finally {
+      setExporting(false);
     }
   };
+
+  const formatButtons: { format: 'md' | 'json' | 'csv' | 'xlsx' | 'docx'; label: string; icon: string }[] = [
+    { format: 'md', label: 'Markdown', icon: '📄' },
+    { format: 'xlsx', label: 'Excel', icon: '📊' },
+    { format: 'docx', label: 'Word', icon: '📝' },
+    { format: 'csv', label: 'CSV', icon: '📋' },
+    { format: 'json', label: 'JSON', icon: '{ }' },
+  ];
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
@@ -67,19 +111,21 @@ export default function ExportDialog({ onClose }: ExportDialogProps) {
             <p className="text-sm text-danger font-medium">
               ⚠️ 警告：明碼匯出的檔案包含所有密碼原文，請妥善保管！
             </p>
-            <div className="flex gap-2">
-              <button
-                onClick={() => handlePlaintextExport('json')}
-                className="flex-1 py-2 text-sm rounded-lg bg-warning text-white hover:opacity-90"
-              >
-                JSON 格式
-              </button>
-              <button
-                onClick={() => handlePlaintextExport('csv')}
-                className="flex-1 py-2 text-sm rounded-lg bg-warning text-white hover:opacity-90"
-              >
-                CSV 格式
-              </button>
+            <p className="text-xs text-vault-text-tertiary">
+              選擇匯出格式（資料按類型分組呈現）：
+            </p>
+            <div className="grid grid-cols-3 gap-2">
+              {formatButtons.map(({ format, label, icon }) => (
+                <button
+                  key={format}
+                  onClick={() => handleExport(format)}
+                  disabled={exporting}
+                  className="py-2.5 text-sm rounded-lg bg-warning text-white hover:opacity-90 disabled:opacity-50 flex flex-col items-center gap-1"
+                >
+                  <span>{icon}</span>
+                  <span>{label}</span>
+                </button>
+              ))}
             </div>
             <button
               onClick={() => setConfirmPlaintext(false)}

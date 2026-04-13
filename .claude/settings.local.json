@@ -1,0 +1,20 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm create:*)",
+      "Read(//usr/local/bin/**)",
+      "Bash([ -f ~/.nvm/nvm.sh ])",
+      "Bash([ -f ~/.zshrc ])",
+      "Read(//Users/jimmy/**)",
+      "Bash(npm --version)",
+      "Bash(cp -r /tmp/password-vault/* /tmp/password-vault/.gitignore \"/Users/jimmy/Documents/Claude code/Password management/\")",
+      "Bash(rm -rf /tmp/password-vault)",
+      "Bash(npm install:*)",
+      "Bash(npx tsc:*)",
+      "Bash(npm run:*)",
+      "Bash(npx vite:*)",
+      "Bash(gh auth:*)",
+      "Bash(gh repo:*)"
+    ]
+  }
+}
