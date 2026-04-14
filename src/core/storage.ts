@@ -43,27 +43,53 @@ class WebStorageAdapter implements StorageAdapter {
   }
 }
 
-// === 未來平台的 adapter 範例 ===
-//
-// Tauri (檔案系統):
-//   class TauriStorageAdapter implements StorageAdapter {
-//     async get(key: string) {
-//       return await invoke('read_file', { path: `${key}.json` });
-//     }
-//     ...
-//   }
-//
-// Capacitor (手機):
-//   class CapacitorStorageAdapter implements StorageAdapter {
-//     async get(key: string) {
-//       const { value } = await Preferences.get({ key });
-//       return value;
-//     }
-//     ...
-//   }
+/**
+ * Tauri 平台的 Store plugin 實作
+ * 資料存放在應用程式的 AppData 目錄，跨平台支援
+ */
+class TauriStorageAdapter implements StorageAdapter {
+  private storePromise: Promise<any> | null = null;
 
-/** 目前使用的儲存 adapter（Web 版） */
-let currentAdapter: StorageAdapter = new WebStorageAdapter();
+  private async getStore() {
+    if (!this.storePromise) {
+      this.storePromise = import('@tauri-apps/plugin-store').then(
+        ({ load }) => load('vault-store.json', { defaults: {}, autoSave: true })
+      );
+    }
+    return this.storePromise;
+  }
+
+  async get(key: string): Promise<string | null> {
+    const store = await this.getStore();
+    const value: string | undefined = await store.get(key);
+    return value ?? null;
+  }
+
+  async set(key: string, value: string): Promise<void> {
+    const store = await this.getStore();
+    await store.set(key, value);
+  }
+
+  async remove(key: string): Promise<void> {
+    const store = await this.getStore();
+    await store.delete(key);
+  }
+
+  async has(key: string): Promise<boolean> {
+    const store = await this.getStore();
+    return await store.has(key);
+  }
+}
+
+/** 偵測是否在 Tauri 環境中執行 */
+function isTauri(): boolean {
+  return typeof window !== 'undefined' && '__TAURI_INTERNALS__' in window;
+}
+
+/** 根據平台自動選擇 adapter */
+let currentAdapter: StorageAdapter = isTauri()
+  ? new TauriStorageAdapter()
+  : new WebStorageAdapter();
 
 /** 取得目前的儲存 adapter */
 export function getStorage(): StorageAdapter {
