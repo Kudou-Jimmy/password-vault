@@ -14,6 +14,7 @@ import { eventBus } from '@/core/events';
 interface VaultContextType {
   isLocked: boolean;
   isNewVault: boolean;
+  isLoading: boolean;
   data: VaultData | null;
   error: string | null;
 
@@ -31,8 +32,8 @@ interface VaultContextType {
   removeFolder: (name: string) => Promise<void>;
   addTag: (tag: string) => Promise<void>;
 
-  exportEncrypted: () => string | null;
-  importEncrypted: (data: string) => void;
+  exportEncrypted: () => Promise<string | null>;
+  importEncrypted: (data: string) => Promise<void>;
 
   autoLockMinutes: number;
   setAutoLockMinutes: (minutes: number) => void;
@@ -42,12 +43,21 @@ const VaultContext = createContext<VaultContextType | null>(null);
 
 export function VaultProvider({ children }: { children: ReactNode }) {
   const [isLocked, setIsLocked] = useState(true);
-  const [isNewVault, setIsNewVault] = useState(!vault.hasExistingVault());
+  const [isNewVault, setIsNewVault] = useState(true);
+  const [isLoading, setIsLoading] = useState(true);
   const [data, setData] = useState<VaultData | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [autoLockMinutes, setAutoLockMinutes] = useState(5);
   const passwordRef = useRef<string>('');
   const lockTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+
+  // 啟動時非同步檢查是否已有金庫
+  useEffect(() => {
+    vault.hasExistingVault().then((exists) => {
+      setIsNewVault(!exists);
+      setIsLoading(false);
+    });
+  }, []);
 
   const lock = useCallback(() => {
     passwordRef.current = '';
@@ -158,8 +168,8 @@ export function VaultProvider({ children }: { children: ReactNode }) {
 
   const exportEncrypted = useCallback(() => vault.exportVaultEncrypted(), []);
 
-  const importEncryptedFn = useCallback((raw: string) => {
-    vault.importVaultEncrypted(raw);
+  const importEncryptedFn = useCallback(async (raw: string) => {
+    await vault.importVaultEncrypted(raw);
     setIsNewVault(false);
     setIsLocked(true);
     setData(null);
@@ -171,6 +181,7 @@ export function VaultProvider({ children }: { children: ReactNode }) {
       value={{
         isLocked,
         isNewVault,
+        isLoading,
         data,
         error,
         initialize,

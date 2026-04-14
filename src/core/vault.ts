@@ -1,6 +1,7 @@
 import { v4 as uuidv4 } from 'uuid';
 import { encrypt, decrypt } from './crypto';
 import { eventBus } from './events';
+import { storage } from './storage';
 import type {
   VaultData,
   VaultEntry,
@@ -27,18 +28,18 @@ function createEmptyVault(): VaultData {
   };
 }
 
-function loadEncryptedVault(): EncryptedVault | null {
-  const raw = localStorage.getItem(STORAGE_KEY);
+async function loadEncryptedVault(): Promise<EncryptedVault | null> {
+  const raw = await storage.get(STORAGE_KEY);
   if (!raw) return null;
   return JSON.parse(raw);
 }
 
-function saveEncryptedVault(vault: EncryptedVault): void {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(vault));
+async function saveEncryptedVault(vault: EncryptedVault): Promise<void> {
+  await storage.set(STORAGE_KEY, JSON.stringify(vault));
 }
 
-export function hasExistingVault(): boolean {
-  return localStorage.getItem(STORAGE_KEY) !== null;
+export async function hasExistingVault(): Promise<boolean> {
+  return storage.has(STORAGE_KEY);
 }
 
 export async function createVault(password: string): Promise<VaultData> {
@@ -53,13 +54,13 @@ export async function createVault(password: string): Promise<VaultData> {
     data: ciphertext,
   };
 
-  saveEncryptedVault(encrypted);
+  await saveEncryptedVault(encrypted);
   eventBus.emit('vault.unlocked');
   return data;
 }
 
 export async function unlockVault(password: string): Promise<VaultData> {
-  const encrypted = loadEncryptedVault();
+  const encrypted = await loadEncryptedVault();
   if (!encrypted) throw new Error('No vault found');
 
   const json = await decrypt(encrypted.data, password, encrypted.salt, encrypted.iv);
@@ -84,7 +85,7 @@ export async function saveVault(
     data: ciphertext,
   };
 
-  saveEncryptedVault(encrypted);
+  await saveEncryptedVault(encrypted);
 }
 
 export function createEntry(
@@ -210,49 +211,18 @@ export function addTag(vault: VaultData, tag: string): VaultData {
   return { ...vault, tags: [...vault.tags, tag] };
 }
 
-export function exportVaultEncrypted(): string | null {
-  const raw = localStorage.getItem(STORAGE_KEY);
+export async function exportVaultEncrypted(): Promise<string | null> {
+  const raw = await storage.get(STORAGE_KEY);
   if (!raw) return null;
   eventBus.emit('vault.exported');
   return raw;
 }
 
-export function importVaultEncrypted(data: string): void {
+export async function importVaultEncrypted(data: string): Promise<void> {
   const parsed: EncryptedVault = JSON.parse(data);
   if (!parsed.version || !parsed.salt || !parsed.iv || !parsed.data) {
     throw new Error('Invalid vault file');
   }
-  saveEncryptedVault(parsed);
+  await saveEncryptedVault(parsed);
   eventBus.emit('vault.imported');
-}
-
-export function exportPlaintext(
-  vault: VaultData,
-  format: 'json' | 'csv'
-): string {
-  const active = getActiveEntries(vault);
-
-  if (format === 'json') {
-    const data = active.map((e) => ({
-      title: e.title,
-      type: e.type,
-      folder: e.folder,
-      tags: e.tags,
-      fields: Object.fromEntries(e.fields.map((f) => [f.key, f.value])),
-      createdAt: new Date(e.createdAt).toISOString(),
-      updatedAt: new Date(e.updatedAt).toISOString(),
-    }));
-    return JSON.stringify(data, null, 2);
-  }
-
-  const headers = ['標題', '類型', '資料夾', '標籤', '欄位名稱', '欄位值'];
-  const rows = active.flatMap((e) =>
-    e.fields.map((f) =>
-      [e.title, e.type, e.folder, e.tags.join(';'), f.key, f.value]
-        .map((v) => `"${v.replace(/"/g, '""')}"`)
-        .join(',')
-    )
-  );
-
-  return [headers.join(','), ...rows].join('\n');
 }

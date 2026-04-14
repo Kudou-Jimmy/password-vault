@@ -1,6 +1,9 @@
 import { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
+import { storage } from '@/core/storage';
 
 type Theme = 'light' | 'dark';
+
+const THEME_KEY = 'vault_theme';
 
 interface ThemeContextType {
   theme: Theme;
@@ -10,15 +13,22 @@ interface ThemeContextType {
 const ThemeContext = createContext<ThemeContextType | null>(null);
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
-  const [theme, setTheme] = useState<Theme>(() => {
-    const saved = localStorage.getItem('vault_theme');
-    if (saved === 'dark' || saved === 'light') return saved;
-    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-  });
+  const [theme, setTheme] = useState<Theme>(
+    window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
+  );
+
+  // 啟動時從儲存層讀取主題設定
+  useEffect(() => {
+    storage.get(THEME_KEY).then((saved) => {
+      if (saved === 'dark' || saved === 'light') {
+        setTheme(saved);
+      }
+    });
+  }, []);
 
   useEffect(() => {
     document.documentElement.classList.toggle('dark', theme === 'dark');
-    localStorage.setItem('vault_theme', theme);
+    storage.set(THEME_KEY, theme);
   }, [theme]);
 
   const toggleTheme = () => setTheme((t) => (t === 'dark' ? 'light' : 'dark'));

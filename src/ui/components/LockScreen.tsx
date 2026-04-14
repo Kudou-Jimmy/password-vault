@@ -43,9 +43,9 @@ export default function LockScreen() {
     const file = e.target.files?.[0];
     if (!file) return;
     const reader = new FileReader();
-    reader.onload = () => {
+    reader.onload = async () => {
       try {
-        importEncrypted(reader.result as string);
+        await importEncrypted(reader.result as string);
         setShowImport(false);
         setLocalError('');
       } catch {

@@ -33,8 +33,8 @@ export default function ExportDialog({ onClose }: ExportDialogProps) {
 
   const ts = Date.now();
 
-  const handleEncryptedExport = () => {
-    const raw = exportEncrypted();
+  const handleEncryptedExport = async () => {
+    const raw = await exportEncrypted();
     if (raw) {
       downloadText(raw, `vault-${ts}.json`, 'application/json');
       onClose();
