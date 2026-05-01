@@ -2,3 +2,7 @@
 # will have compiled files and executables
 /target/
 /gen/schemas
+
+# iOS / Android 生成檔（手機支援暫停）
+/gen/apple/
+/gen/android/

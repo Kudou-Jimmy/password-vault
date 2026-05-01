@@ -1,0 +1,130 @@
+name: Release
+
+# 觸發條件：推送 v 開頭的 tag 時自動跑（例如 v0.1.0）
+# 也可以在 GitHub 網頁手動觸發
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  create-release:
+    runs-on: ubuntu-latest
+    outputs:
+      release_id: ${{ steps.create-release.outputs.id }}
+      upload_url: ${{ steps.create-release.outputs.upload_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 取得版本號
+        id: get_version
+        run: |
+          if [[ "${{ github.ref_type }}" == "tag" ]]; then
+            VERSION="${{ github.ref_name }}"
+          else
+            VERSION="v$(node -p "require('./src-tauri/tauri.conf.json').version")-manual.$(date +%Y%m%d%H%M%S)"
+          fi
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: 建立 GitHub Release（草稿）
+        id: create-release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.get_version.outputs.version }}
+          name: Password Vault ${{ steps.get_version.outputs.version }}
+          body: |
+            ## 下載
+            - **macOS Apple Silicon (M1/M2/M3)**：`*_aarch64.dmg`
+            - **macOS Intel**：`*_x64.dmg`
+            - **macOS 通用版（胖二進位）**：`*_universal.dmg`
+            - **Windows 64-bit**：`*_x64-setup.exe` 或 `*_x64_en-US.msi`
+
+            ## macOS 首次開啟提示
+            若出現「無法開啟，因為來自未識別的開發者」，請到「系統設定 → 隱私與安全性 → 仍要打開」。
+          draft: true
+          prerelease: false
+
+  build:
+    needs: create-release
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # macOS Apple Silicon
+          - platform: 'macos-latest'
+            target: 'aarch64-apple-darwin'
+            args: '--target aarch64-apple-darwin'
+            label: 'macOS ARM64'
+
+          # macOS Intel
+          - platform: 'macos-latest'
+            target: 'x86_64-apple-darwin'
+            args: '--target x86_64-apple-darwin'
+            label: 'macOS Intel'
+
+          # macOS Universal（胖二進位，包含 Intel + ARM）
+          - platform: 'macos-latest'
+            target: 'universal-apple-darwin'
+            args: '--target universal-apple-darwin'
+            label: 'macOS Universal'
+
+          # Windows x64
+          - platform: 'windows-latest'
+            target: 'x86_64-pc-windows-msvc'
+            args: ''
+            label: 'Windows x64'
+
+    runs-on: ${{ matrix.platform }}
+    name: Build (${{ matrix.label }})
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 安裝 Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: 安裝 Rust 工具鏈
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          # universal-apple-darwin 不是真正的 target，需要同時安裝 Intel + ARM
+          targets: ${{ matrix.target == 'universal-apple-darwin' && 'x86_64-apple-darwin,aarch64-apple-darwin' || matrix.target }}
+
+      - name: Rust 快取
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: './src-tauri -> target'
+          key: ${{ matrix.target }}
+
+      - name: 安裝前端依賴
+        run: npm ci
+
+      - name: 建置 Tauri 應用
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          releaseId: ${{ needs.create-release.outputs.release_id }}
+          args: ${{ matrix.args }}
+
+  publish-release:
+    needs: [create-release, build]
+    runs-on: ubuntu-latest
+    steps:
+      - name: 發佈 Release（從草稿改為正式）
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.repos.updateRelease({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              release_id: ${{ needs.create-release.outputs.release_id }},
+              draft: false,
+              prerelease: false
+            })
