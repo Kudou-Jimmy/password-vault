@@ -14,12 +14,17 @@
 
 | 平台 | 格式 | 狀態 |
 |------|------|------|
-| macOS (Intel / Apple Silicon) | `.dmg` 安裝檔 | ✅ 已支援 |
-| Windows 10/11 | `.msi` / `.exe` 安裝檔 | 🔜 計畫中 |
+| macOS Apple Silicon (M1/M2/M3) | `*_aarch64.dmg` | ✅ 已支援 |
+| macOS Intel | `*_x64.dmg` | ✅ 已支援 |
+| macOS 通用版（Intel + Apple Silicon） | `*_universal.dmg` | ✅ 已支援 |
+| Windows 10/11 (64-bit) | `*_x64-setup.exe` / `*_x64_en-US.msi` | ✅ 已支援 |
 | Linux | `.deb` / `.AppImage` | 🔜 計畫中 |
 
 桌面版是獨立應用程式，**不需要安裝 Node.js、不需要用終端機**，雙擊就能用。
 資料儲存在應用程式的專屬資料夾中，不受瀏覽器清除資料的影響。
+
+> **不確定自己是 Intel 還是 Apple Silicon？**
+> 點左上角蘋果 → 關於這台 Mac → 如果「晶片」欄位顯示 Apple M1/M2/M3，下載 `aarch64`；如果顯示 Intel，下載 `x64`；如果你不確定，下載 `universal`（通用版兩種都能跑，檔案較大）。
 
 ### 瀏覽器版
 
@@ -40,19 +45,40 @@
 ### 方式一：Mac 桌面應用程式（最簡單）
 
 1. 到本專案的 [GitHub Releases](https://github.com/Kudou-Jimmy/password-vault/releases) 頁面
-2. 下載 `password-vault_x.x.x_x64.dmg` 檔案
+2. 根據你的 Mac 選擇對應版本：
+   - **M1/M2/M3（Apple Silicon）**：下載 `*_aarch64.dmg`
+   - **Intel Mac**：下載 `*_x64.dmg`
+   - **不確定**：下載 `*_universal.dmg`（通用版，兩種都能跑）
 3. 雙擊打開 `.dmg` 檔案
 4. 把「password-vault」圖示**拖進「Applications」資料夾**
 5. 到「應用程式」資料夾，雙擊打開 password-vault
 6. 完成！直接開始使用
 
 > **首次開啟可能會看到「無法打開」的提示**
-> 這是因為應用程式沒有 Apple 開發者簽名。解決方法：
+> 這是因為應用程式沒有 Apple 開發者簽名（需付費加入 Apple Developer Program）。解決方法：
 > 1. 打開「系統設定」→「隱私與安全性」
 > 2. 往下滑找到「已阻擋 password-vault，因為它不是來自已識別的開發者」
 > 3. 點「仍要打開」即可
+>
+> 或者在 `.dmg` 圖示上**按住 Control 再點一下** → 選「打開」→「打開」，也可以繞過這個提示。
 
 **移植到其他 Mac**：把 `.dmg` 檔案拷貝到隨身碟、雲端硬碟、或直接傳送給別人，對方雙擊安裝就能用，不需要裝任何開發工具。
+
+---
+
+### 方式一（Windows）：Windows 桌面應用程式
+
+1. 到本專案的 [GitHub Releases](https://github.com/Kudou-Jimmy/password-vault/releases) 頁面
+2. 下載 `*_x64-setup.exe`（安裝精靈）或 `*_x64_en-US.msi`（Windows Installer）
+3. 雙擊執行安裝檔，一路點「下一步」即可
+4. 安裝完成後，從開始選單找到「password-vault」打開
+5. 完成！
+
+> **可能出現 Windows SmartScreen 警告（「Windows 已保護您的電腦」）**
+> 這是因為應用程式沒有程式碼簽章憑證（需付費購買）。解決方法：
+> 點「更多資訊」→「仍要執行」即可。
+
+**資料存放位置（Windows）**：`C:\Users\你的帳號\AppData\Roaming\com.jimmyvault.passwordvault\`
 
 ### 方式二：瀏覽器版（有人給你網址）
 
@@ -470,9 +496,9 @@ export interface StorageAdapter {
 | 未來：Capacitor | `window.Capacitor` | `CapacitorStorageAdapter` | Preferences API |
 
 **Tauri 桌面版的資料位置：**
-- macOS: `~/Library/Application Support/com.password-vault.app/vault-store.json`
-- Windows: `%APPDATA%/com.password-vault.app/vault-store.json`
-- Linux: `~/.config/com.password-vault.app/vault-store.json`
+- macOS: `~/Library/Application Support/com.jimmyvault.passwordvault/vault-store.json`
+- Windows: `%APPDATA%\com.jimmyvault.passwordvault\vault-store.json`（即 `C:\Users\你的帳號\AppData\Roaming\com.jimmyvault.passwordvault\`）
+- Linux: `~/.config/com.jimmyvault.passwordvault/vault-store.json`
 
 這種設計使得：
 - 新增平台只需實作一個 adapter class（約 30 行程式碼）
@@ -517,13 +543,26 @@ src-tauri/
 # 開發模式（前端 HMR + Tauri 視窗）
 npm run tauri dev
 
-# 建置生產版本
+# 建置生產版本（當前平台）
 npm run tauri build
-# 產出：
-#   macOS: src-tauri/target/release/bundle/dmg/password-vault_x.x.x_x64.dmg
-#   Windows: src-tauri/target/release/bundle/msi/password-vault_x.x.x_x64.msi
-#   Linux: src-tauri/target/release/bundle/deb/password-vault_x.x.x_amd64.deb
+
+# 建置特定 macOS target（需要安裝對應 Rust target）
+npm run tauri build -- --target aarch64-apple-darwin    # Apple Silicon
+npm run tauri build -- --target x86_64-apple-darwin     # Intel Mac
+npm run tauri build -- --target universal-apple-darwin  # 胖二進位（需兩個 target 都裝）
+
+# 安裝額外 Rust targets（macOS 上）
+rustup target add aarch64-apple-darwin
+rustup target add x86_64-apple-darwin
+
+# 產出位置：
+#   macOS .dmg:    src-tauri/target/<target>/release/bundle/dmg/
+#   Windows .msi:  src-tauri/target/release/bundle/msi/
+#   Windows .exe:  src-tauri/target/release/bundle/nsis/
+#   Linux .deb:    src-tauri/target/release/bundle/deb/
 ```
+
+> **實際上不需要手動跑這些指令**：推送 git tag 後，GitHub Actions 會在對應平台的 CI runner 上自動完成所有建置，並上傳到 Releases。
 
 ### 專案結構
 
@@ -735,6 +774,61 @@ type EventType =
 5. **模組化結構**：功能模組位於 `features/` 目錄，與核心和 UI 解耦
 6. **Context 分離**：金庫狀態與主題狀態各自獨立，互不影響
 7. **Code-split**：重型依賴（xlsx/docx）使用動態載入，保持首屏效能
+
+### CI/CD 自動建置
+
+專案使用 GitHub Actions 自動建置跨平台安裝檔。只需推送 `v*` 格式的 git tag，就會觸發完整建置流程：
+
+```
+推送 tag v0.2.0
+        │
+        ▼
+┌─ create-release ─────────────────┐
+│  在 GitHub 建立 Release 草稿     │
+└──────────────────────────────────┘
+        │
+        ▼ (並行執行)
+┌────────────────────────────────────────────────────────┐
+│  macOS ARM64          macOS Intel         macOS Universal  │
+│  aarch64-apple-darwin x86_64-apple-darwin  fat binary    │
+│  macos-latest runner  macos-latest runner macos-latest  │
+└────────────────────┬──────────────────────────────────┘
+                     │
+        ┌────────────┴────────────┐
+        │  Windows x64            │
+        │  x86_64-pc-windows-msvc │
+        │  windows-latest runner  │
+        └─────────────────────────┘
+        │
+        ▼
+┌─ publish-release ────────────────┐
+│  草稿 → 正式發布                 │
+└──────────────────────────────────┘
+```
+
+**發佈新版本的流程：**
+
+```bash
+# 1. 確認所有 Cargo.toml / tauri.conf.json / package.json 版本一致
+# 2. commit 並推送
+git add .
+git commit -m "release: v0.x.x"
+git push origin main
+
+# 3. 建立 tag 並推送（這一步觸發 CI）
+git tag v0.x.x
+git push origin v0.x.x
+
+# 4. 等約 15 分鐘，GitHub Releases 頁面會出現含 4 個安裝檔的 Release
+```
+
+**為什麼 Windows 完全不需要特別處理？**
+
+Tauri 2 的跨平台設計讓 Windows 支援幾乎零成本：
+- 前端（React/HTML/CSS）在 Windows 上跑在 WebView2（Windows 10/11 內建），與 macOS WKWebView 執行完全相同的程式碼
+- 後端 Rust 原生支援 `x86_64-pc-windows-msvc` 工具鏈，沒有額外 shim
+- `tauri-plugin-store` 在 Windows 自動存到 `%APPDATA%`，macOS 存到 `~/Library/Application Support`——業務邏輯一行都不用改
+- Tauri 的 Capability 權限系統在所有平台上行為一致
 
 ### 部署方式
 
