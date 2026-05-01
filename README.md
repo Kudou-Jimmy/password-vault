@@ -564,46 +564,124 @@ rustup target add x86_64-apple-darwin
 
 > **實際上不需要手動跑這些指令**：推送 git tag 後，GitHub Actions 會在對應平台的 CI runner 上自動完成所有建置，並上傳到 Releases。
 
-### 專案結構
+### 專案結構（完整檔案清單）
+
+#### 根目錄設定檔
+
+```
+.
+├── README.md                # 本文件
+├── package.json             # Node 專案資訊與相依套件清單
+├── package-lock.json        # 鎖定的相依套件版本
+├── tsconfig.json            # TypeScript 主設定（references 子設定）
+├── tsconfig.app.json        # 前端 app 的 TypeScript 設定
+├── tsconfig.node.json       # Vite 工具鏈用的 TypeScript 設定
+├── vite.config.ts           # Vite 建置設定（React、Tailwind、Tauri 整合、HMR）
+├── eslint.config.js         # ESLint 規則（React + TypeScript）
+├── index.html               # 前端進入 HTML，掛載 React app
+└── .gitignore               # Git 忽略規則（node_modules、dist、target 等）
+```
+
+#### 前端原始碼（`src/`）
 
 ```
 src/
-├── core/                    # 核心模組
-│   ├── crypto.ts            # 加解密引擎（PBKDF2 金鑰衍生 + AES-GCM 加解密）
-│   ├── events.ts            # 發布/訂閱事件系統
+├── main.tsx                 # React DOM 進入點，掛載 <App /> 至 #root
+├── App.tsx                  # 根元件，包裝 ThemeProvider + VaultProvider + 路由
+├── index.css                # Tailwind 載入指令與全域樣式
+│
+├── core/                    # 核心邏輯（與 UI 解耦）
+│   ├── crypto.ts            # AES-256-GCM + PBKDF2-SHA256（600k 迭代）加解密引擎
+│   ├── events.ts            # 發布/訂閱事件系統（金庫 CRUD 事件）
 │   ├── storage.ts           # StorageAdapter 介面 + Web/Tauri 實作 + 平台自動偵測
-│   └── vault.ts             # 金庫 CRUD 操作、匯出入、資料夾/標籤管理
+│   └── vault.ts             # 金庫核心 CRUD、匯出入、資料夾、標籤、軟刪除
+│
 ├── types/
-│   └── index.ts             # 所有 TypeScript 型別定義與預設欄位配置
-├── contexts/
-│   ├── VaultContext.tsx      # 金庫狀態管理（解鎖、自動鎖定、CRUD wrapper）
-│   └── ThemeContext.tsx      # 深色/淺色模式狀態管理
-├── features/
+│   └── index.ts             # TypeScript 型別定義（VaultEntry、VaultField、6 種類型預設欄位）
+│
+├── contexts/                # React Context 全域狀態
+│   ├── VaultContext.tsx     # 金庫狀態（解鎖/鎖定、5 分鐘自動鎖定、CRUD wrapper）
+│   └── ThemeContext.tsx     # 深色/淺色模式切換
+│
+├── features/                # 功能模組（解耦的業務功能）
 │   ├── export/
-│   │   └── index.ts         # 匯出引擎（Markdown/Excel/Word/CSV/JSON，按類型分組）
+│   │   └── index.ts         # 匯出引擎（MD/Excel/Word/CSV/JSON，xlsx + docx 動態載入）
 │   └── generator/
-│       └── index.ts         # 密碼產生器（隨機字元 + 助記詞組）
-└── ui/
-    ├── components/
-    │   ├── LockScreen.tsx    # 登入/建立金庫畫面
-    │   ├── Sidebar.tsx       # 側邊欄（導覽、資料夾、標籤、設定）
-    │   ├── EntryList.tsx     # 密碼條目列表
-    │   ├── EntryDetail.tsx   # 條目詳情/編輯/歷史紀錄
-    │   ├── NewEntryForm.tsx  # 新增條目表單
-    │   ├── PasswordGenerator.tsx  # 密碼產生器 UI
-    │   ├── StrengthMeter.tsx      # 密碼強度指示器
-    │   ├── ExportDialog.tsx       # 匯出對話框（加密 + 5 種明碼格式）
-    │   └── HealthReport.tsx       # 金庫健康報告
-    └── layouts/
-        └── MainLayout.tsx    # 主佈局（三欄式：側邊欄 + 列表 + 詳情）
+│       └── index.ts         # 密碼產生器（CSPRNG 隨機字元 + 助記詞組）
+│
+├── ui/
+│   ├── components/          # UI 元件
+│   │   ├── LockScreen.tsx        # 登入/建立金庫畫面
+│   │   ├── Sidebar.tsx           # 側邊欄（資料夾、標籤、回收桶、鎖定、主題切換）
+│   │   ├── EntryList.tsx         # 密碼條目列表（搜尋、過濾）
+│   │   ├── EntryDetail.tsx       # 條目詳情、編輯、修改歷史顯示
+│   │   ├── NewEntryForm.tsx      # 新增條目表單（6 種類型）
+│   │   ├── PasswordGenerator.tsx # 密碼產生器 UI 包裝
+│   │   ├── StrengthMeter.tsx     # 密碼強度視覺化指示器（zxcvbn）
+│   │   ├── ExportDialog.tsx      # 匯出對話框（加密 + 5 種明碼格式）
+│   │   └── HealthReport.tsx      # 金庫健康報告（弱密碼/重複/過期）
+│   └── layouts/
+│       └── MainLayout.tsx        # 三欄式主佈局（側邊欄 + 列表 + 詳情）
+│
+└── assets/                  # 靜態資源
+    ├── hero.png             # 首頁/登入畫面圖
+    ├── react.svg            # React logo
+    └── vite.svg             # Vite logo
+```
 
-src-tauri/                   # Tauri 桌面應用（Rust）
-├── Cargo.toml               # Rust 依賴管理
-├── tauri.conf.json          # 應用設定
-├── capabilities/            # 權限宣告
-└── src/
-    ├── main.rs              # Windows 進入點
-    └── lib.rs               # Plugin 註冊與應用初始化
+#### 公開靜態資源（`public/`）
+
+```
+public/
+├── favicon.svg              # 瀏覽器分頁圖示
+└── icons.svg                # UI 用 SVG icon sprite
+```
+
+#### Tauri 桌面應用（`src-tauri/`）
+
+```
+src-tauri/
+├── Cargo.toml               # Rust 相依（tauri、tauri-plugin-store、serde、log）
+├── Cargo.lock               # 鎖定的 Rust 相依版本
+├── build.rs                 # Cargo 建置腳本（呼叫 tauri-build 產生資源）
+├── tauri.conf.json          # 應用設定（視窗 1000x700、bundle ID、圖示、iOS team）
+├── .gitignore               # 忽略 target/、gen/schemas、gen/apple、gen/android
+│
+├── src/
+│   ├── main.rs              # Windows 進入點（隱藏 console 視窗）
+│   └── lib.rs               # Tauri Builder + plugin_store 註冊
+│
+├── capabilities/
+│   └── default.json         # 權限宣告（core:default + store:default）
+│
+├── icons/                   # 應用程式圖示（各平台/解析度）
+│   ├── icon.icns            # macOS 主圖示
+│   ├── icon.ico             # Windows 主圖示
+│   ├── icon.png             # 通用 PNG
+│   ├── 32x32.png            # 小圖示
+│   ├── 128x128.png          # 中圖示
+│   ├── 128x128@2x.png       # 高 DPI（256x256 實際）
+│   ├── StoreLogo.png        # 應用商店 logo
+│   └── Square*.png          # Windows 磚（30/44/71/89/107/142/150/284/310 px 共 9 個）
+│
+└── gen/                     # Tauri 自動產生（部分 git 追蹤）
+    └── schemas/             # 權限 schema（建置時產生，須追蹤）
+        ├── capabilities.json
+        ├── acl-manifests.json
+        ├── desktop-schema.json
+        ├── macOS-schema.json
+        ├── iOS-schema.json
+        └── mobile-schema.json
+```
+
+> `gen/apple/` 與 `gen/android/`（iOS/Android 專案）已加入 .gitignore，因目前手機支援暫停。
+
+#### CI/CD（`.github/`）
+
+```
+.github/
+└── workflows/
+    └── release.yml          # 自動建置：推 v* tag 觸發，產出 5 個安裝檔上傳 Releases
 ```
 
 ### 加密設計
