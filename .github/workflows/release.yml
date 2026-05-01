@@ -78,6 +78,12 @@ jobs:
             args: ''
             label: 'Windows x64'
 
+          # Windows ARM64（Surface Pro X、Snapdragon X 筆電）
+          - platform: 'windows-latest'
+            target: 'aarch64-pc-windows-msvc'
+            args: '--target aarch64-pc-windows-msvc'
+            label: 'Windows ARM64'
+
     runs-on: ${{ matrix.platform }}
     name: Build (${{ matrix.label }})
 
