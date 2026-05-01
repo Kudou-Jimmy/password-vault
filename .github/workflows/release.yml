@@ -109,6 +109,9 @@ jobs:
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # 確保 macOS binary 能在 10.13（High Sierra）以上執行
+          # 不設定的話，CI 機器（macOS 14）可能產出只能跑新版的 binary
+          MACOSX_DEPLOYMENT_TARGET: "10.13"
         with:
           releaseId: ${{ needs.create-release.outputs.release_id }}
           args: ${{ matrix.args }}
